@@ -10,14 +10,6 @@ interface Props {
 export function SeletorClinica({ resumos, data, aoSelecionar }: Props) {
   return (
     <section className="selecao-clinica">
-      <div className="hero-logo">
-        <img
-          src={`${import.meta.env.BASE_URL}logo-aot.png`}
-          alt="AoT — Appointment on Time"
-        />
-        <p className="hero-modulo">Módulo de Cancelamentos</p>
-      </div>
-
       <header className="selecao-cabecalho">
         <h2>Escolha a clínica</h2>
         <p className="subtitulo">
