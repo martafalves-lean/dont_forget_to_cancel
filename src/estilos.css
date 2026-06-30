@@ -64,14 +64,10 @@ button {
   gap: 12px;
   outline: none;
 }
-.marca-icone {
-  font-size: 28px;
-  background: var(--primaria-clara);
-  width: 46px;
-  height: 46px;
-  display: grid;
-  place-items: center;
-  border-radius: 12px;
+.marca-logo {
+  height: 42px;
+  width: auto;
+  display: block;
 }
 .marca-nome {
   display: block;
@@ -207,6 +203,27 @@ button.trilho-item:hover {
 }
 
 /* --- Selecao de clinica -------------------------------------------------- */
+.hero-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 28px 0 18px;
+}
+.hero-logo img {
+  height: 120px;
+  width: auto;
+  max-width: 90%;
+}
+.hero-modulo {
+  margin: 6px 0 0;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--texto-tenue);
+}
+
 .selecao-cabecalho {
   margin: 8px 0 22px;
 }

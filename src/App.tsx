@@ -113,9 +113,13 @@ export function App() {
     <div className="app">
       <header className="cabecalho-app">
         <div className="marca" onClick={voltarSelecao} role="button" tabIndex={0}>
-          <span className="marca-icone" aria-hidden="true">🦷</span>
+          <img
+            className="marca-logo"
+            src={`${import.meta.env.BASE_URL}logo-aot.png`}
+            alt="AoT — Appointment on Time"
+          />
           <div>
-            <span className="marca-nome">Lembre-se de Cancelar</span>
+            <span className="marca-nome">AoT — Módulo de Cancelamentos</span>
             <span className="marca-sub">Gestão de faltas · Clínica dentária</span>
           </div>
         </div>
