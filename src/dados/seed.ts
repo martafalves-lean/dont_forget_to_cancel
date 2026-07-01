@@ -45,19 +45,48 @@ function adicionarDias(base: Date, dias: number): Date {
 
 // --- Dimensoes fixas -------------------------------------------------------
 
-export const CLINICAS: Clinica[] = [
-  { id: 'cl-lisboa', nome: 'Os Vossos Dentes — Saldanha', cidade: 'Lisboa', morada: 'Av. da República 45, 1050-187 Lisboa' },
-  { id: 'cl-porto', nome: 'Os Vossos Dentes — Boavista', cidade: 'Porto', morada: 'Av. da Boavista 1203, 4100-130 Porto' },
-  { id: 'cl-coimbra', nome: 'Os Vossos Dentes — Centro', cidade: 'Coimbra', morada: 'Rua Ferreira Borges 88, 3000-180 Coimbra' },
-  { id: 'cl-faro', nome: 'Os Vossos Dentes — Marina', cidade: 'Faro', morada: 'Rua de Santo António 12, 8000-283 Faro' },
+// Clínicas Dentárias Santa Madalena. A morada guarda apenas a informação
+// relevante para uso interno; `gabinetes` define o nº de gabinetes de cada local.
+interface DefClinica extends Clinica {
+  gabinetes: number
+}
+
+const DEF_CLINICAS: DefClinica[] = [
+  { id: 'cl-alverca', nome: 'Santa Madalena — Alverca Park', cidade: 'Alverca', morada: 'E.N. 10, Alverca Park, 2619-501 Alverca', gabinetes: 3 },
+  { id: 'cl-aveiro', nome: 'Santa Madalena — Aveiro', cidade: 'Aveiro', morada: 'Pingo Doce Esgueira, E.N. 109, Loja 2, 3800-042 Aveiro', gabinetes: 3 },
+  { id: 'cl-bplanet', nome: 'Santa Madalena — BPlanet', cidade: 'Coina', morada: 'Barreiro Retail Planet, Loja F, E.N. 10 km 18,5, 2830-411 Coina', gabinetes: 3 },
+  { id: 'cl-braga', nome: 'Santa Madalena — Braga Parque', cidade: 'Braga', morada: 'Braga Parque, Loja 1055, 4710-427 Braga', gabinetes: 4 },
+  { id: 'cl-cascais', nome: 'Santa Madalena — Cascais', cidade: 'Cascais', morada: 'Rua dos Tremoceiros 356, 2750-492 Cascais', gabinetes: 2 },
+  { id: 'cl-coimbra', nome: 'Santa Madalena — Coimbra (Fórum)', cidade: 'Coimbra', morada: 'Fórum Coimbra, Loja 048, 3040-389 Coimbra', gabinetes: 4 },
+  { id: 'cl-evora', nome: 'Santa Madalena — Évora Plaza', cidade: 'Évora', morada: 'Évora Plaza, Loja 1.04, 7005-345 Évora', gabinetes: 2 },
+  { id: 'cl-leiria', nome: 'Santa Madalena — Leiria', cidade: 'Leiria', morada: 'Lis Shopping, Rua Dr. João Soares, 2400-082 Leiria', gabinetes: 3 },
+  { id: 'cl-lisboa-alvalade', nome: 'Santa Madalena — Lisboa Alvalade', cidade: 'Lisboa', morada: 'C.C. Alvalade, Loja 28, Praça Alvalade 6B, 1700-036 Lisboa', gabinetes: 3 },
+  { id: 'cl-lisboa-campo-pequeno', nome: 'Santa Madalena — Lisboa Campo Pequeno', cidade: 'Lisboa', morada: 'C.C. Campo Pequeno, Loja 144, 1000-082 Lisboa', gabinetes: 3 },
+  { id: 'cl-lisboa-colombo', nome: 'Santa Madalena — Lisboa Colombo', cidade: 'Lisboa', morada: 'C.C. Colombo, Piso 0, Loja 0.515, 1500-392 Lisboa', gabinetes: 4 },
+  { id: 'cl-lisboa-conde-redondo', nome: 'Santa Madalena — Lisboa Conde Redondo', cidade: 'Lisboa', morada: 'Rua Conde de Redondo 1, 1150-101 Lisboa', gabinetes: 3 },
+  { id: 'cl-lisboa-nacoes', nome: 'Santa Madalena — Lisboa Parque das Nações', cidade: 'Lisboa', morada: 'Alameda dos Oceanos, Ed. Smart, Loja D/E/F, 1990-265 Lisboa', gabinetes: 4 },
+  { id: 'cl-loures', nome: 'Santa Madalena — Loures Shopping', cidade: 'Loures', morada: 'LoureShopping, Loja 0.010, Av. das Descobertas 90, 2670-457 Loures', gabinetes: 3 },
+  { id: 'cl-miraflores', nome: 'Santa Madalena — Miraflores', cidade: 'Algés', morada: 'C.C. New Life, Av. das Túlipas 6, Loja 2.01, 1495-161 Algés', gabinetes: 3 },
+  { id: 'cl-montijo', nome: 'Santa Madalena — Montijo (Fórum)', cidade: 'Montijo', morada: 'Fórum Montijo, Loja 1.30 A, Piso 1, 2870-100 Montijo', gabinetes: 3 },
+  { id: 'cl-odivelas', nome: 'Santa Madalena — Odivelas (Strada Outlet)', cidade: 'Odivelas', morada: 'Strada Outlet, Loja 2108, Estrada de Paiã, 2675-626 Odivelas', gabinetes: 3 },
+  { id: 'cl-porto', nome: 'Santa Madalena — Porto', cidade: 'Porto', morada: 'Av. da Boavista 4049, 4100-140 Porto', gabinetes: 4 },
+  { id: 'cl-feira', nome: 'Santa Madalena — Santa Maria da Feira', cidade: 'Santa Maria da Feira', morada: 'Pingo Doce, Rua Dr. Crispim B. de Castro, 4520-283 Sta. M. da Feira', gabinetes: 2 },
+  { id: 'cl-santarem', nome: 'Santa Madalena — Santarém', cidade: 'Santarém', morada: 'Santarém Retail Park, Loja K, 2000-471 Santarém', gabinetes: 3 },
+  { id: 'cl-setubal', nome: 'Santa Madalena — Setúbal', cidade: 'Setúbal', morada: 'Av. Mestre Lima de Freitas 28, 2910-866 Setúbal', gabinetes: 3 },
+  { id: 'cl-sintra', nome: 'Santa Madalena — Sintra Retail Park', cidade: 'Rio de Mouro', morada: 'Sintra Retail Park, Loja 18, IC19, 2639-005 Rio de Mouro', gabinetes: 3 },
+  { id: 'cl-taguspark', nome: 'Santa Madalena — TagusPark', cidade: 'Porto Salvo', morada: 'TagusPark, Núcleo Central 185, 2740-257 Porto Salvo', gabinetes: 2 },
 ]
 
-const GABINETES_POR_CLINICA: Record<string, number> = {
-  'cl-lisboa': 4,
-  'cl-porto': 3,
-  'cl-coimbra': 3,
-  'cl-faro': 2,
-}
+export const CLINICAS: Clinica[] = DEF_CLINICAS.map((c) => ({
+  id: c.id,
+  nome: c.nome,
+  cidade: c.cidade,
+  morada: c.morada,
+}))
+
+const GABINETES_POR_CLINICA: Record<string, number> = Object.fromEntries(
+  DEF_CLINICAS.map((c) => [c.id, c.gabinetes]),
+)
 
 export const GABINETES: Gabinete[] = CLINICAS.flatMap((c) =>
   Array.from({ length: GABINETES_POR_CLINICA[c.id] }, (_, i) => ({
@@ -223,7 +252,7 @@ export function gerarConsultas(
           id: `con-${String(n).padStart(5, '0')}`,
           clinicaId: gab.clinicaId,
           gabineteId: gab.id,
-          medicoId: gab.id.replace('-g', '-m'),
+          medicoId: gab.id.replace(/-g(\d+)$/, '-m$1'),
           pacienteId: paciente.id,
           data: dataISO(dia),
           hora,
