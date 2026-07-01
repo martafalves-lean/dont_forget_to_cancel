@@ -15,16 +15,20 @@ create table if not exists gabinetes (
 );
 
 create table if not exists medicos (
-  id            text primary key,
-  clinica_id    text not null references clinicas (id) on delete cascade,
-  nome          text not null,
-  especialidade text not null
+  id                    text primary key,
+  clinica_id            text not null references clinicas (id) on delete cascade,
+  nome                  text not null,
+  especialidade         text not null,
+  taxa_falta_historica  numeric(4, 2) not null default 0
 );
 
 create table if not exists pacientes (
   id                          text primary key,
   nome                        text not null,
+  sexo                        text not null,
   idade                       integer not null,
+  seguro                      text not null,
+  canal_preferido             text not null,
   distancia_km                numeric(5, 1) not null,
   consultas_totais            integer not null default 0,
   faltas                      integer not null default 0,
@@ -43,6 +47,7 @@ create table if not exists consultas (
   hora               time not null,
   duracao_min        integer not null,
   tipo               text not null,
+  valor_euros        numeric(7, 2) not null default 0,
   estado             text not null,
   data_marcacao      date not null,
   confirmada         boolean not null default false,

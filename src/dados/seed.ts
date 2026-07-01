@@ -1,4 +1,5 @@
 import type {
+  CanalComunicacao,
   CanalConfirmacao,
   Clinica,
   Consulta,
@@ -6,6 +7,8 @@ import type {
   Gabinete,
   Medico,
   Paciente,
+  Seguro,
+  Sexo,
   TipoConsulta,
 } from '../tipos'
 
@@ -124,6 +127,8 @@ export const MEDICOS: Medico[] = (() => {
         clinicaId: c.id,
         nome: NOMES_MEDICOS[nomeIdx % NOMES_MEDICOS.length],
         especialidade: escolher(r, ESPECIALIDADES),
+        // Taxa histórica de falta da agenda deste médico (~5% a 28%).
+        taxaFaltaHistorica: Math.round((0.05 + r() * 0.23) * 100) / 100,
       })
       nomeIdx++
     }
@@ -150,6 +155,13 @@ const APELIDOS = [
 
 const TOTAL_PACIENTES = 90
 
+const SEGUROS: Seguro[] = [
+  'Particular', 'Médis', 'Multicare', 'AdvanceCare', 'SNS',
+]
+const CANAIS_PREF: CanalComunicacao[] = [
+  'SMS', 'Email', 'App', 'Telefone', 'Nenhum',
+]
+
 export const PACIENTES: Paciente[] = (() => {
   const r = mulberry32(2027)
   return Array.from({ length: TOTAL_PACIENTES }, (_, i) => {
@@ -163,10 +175,14 @@ export const PACIENTES: Paciente[] = (() => {
             consultasTotais,
             Math.round(consultasTotais * propensao * propensao * 0.6),
           )
+    const sexo: Sexo = r() < 0.5 ? 'Feminino' : 'Masculino'
     return {
       id: `pac-${String(i + 1).padStart(3, '0')}`,
       nome: `${escolher(r, PRIMEIROS_NOMES)} ${escolher(r, APELIDOS)}`,
+      sexo,
       idade: inteiro(r, 7, 84),
+      seguro: escolher(r, SEGUROS),
+      canalPreferido: escolher(r, CANAIS_PREF),
       distanciaKm: Math.round((1 + r() * 39) * 10) / 10,
       consultasTotais,
       faltas,
@@ -187,6 +203,18 @@ const TIPOS: TipoConsulta[] = [
   'Primeira consulta', 'Consulta de rotina', 'Destartarização', 'Endodontia',
   'Implantologia', 'Ortodontia', 'Cirurgia oral', 'Urgência',
 ]
+
+/** Valor de referência (euros) por tipo de tratamento. */
+const VALOR_TIPO: Record<TipoConsulta, number> = {
+  'Primeira consulta': 30,
+  'Consulta de rotina': 40,
+  Destartarização: 55,
+  Endodontia: 180,
+  Implantologia: 900,
+  Ortodontia: 120,
+  'Cirurgia oral': 250,
+  Urgência: 60,
+}
 
 const HORAS = [
   '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00',
@@ -258,6 +286,7 @@ export function gerarConsultas(
           hora,
           duracaoMin: escolher(r, [30, 30, 45, 60, 60, 90]),
           tipo,
+          valorEuros: VALOR_TIPO[tipo],
           estado,
           dataMarcacao,
           confirmada,

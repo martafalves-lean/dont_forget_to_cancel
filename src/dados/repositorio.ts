@@ -58,7 +58,13 @@ function enriquecer(
   const medico = medicos.get(c.medicoId)
   const gabinete = gabinetes.get(c.gabineteId)
   if (!paciente || !medico || !gabinete) return null
-  return { ...c, paciente, medico, gabinete, risco: calcularRisco(c, paciente) }
+  return {
+    ...c,
+    paciente,
+    medico,
+    gabinete,
+    risco: calcularRisco(c, paciente, medico),
+  }
 }
 
 function ordenarPorHora(a: ConsultaEnriquecida, b: ConsultaEnriquecida) {
@@ -71,7 +77,10 @@ function ordenarPorHora(a: ConsultaEnriquecida, b: ConsultaEnriquecida) {
 const linhaParaPaciente = (r: any): Paciente => ({
   id: r.id,
   nome: r.nome,
+  sexo: r.sexo,
   idade: r.idade,
+  seguro: r.seguro,
+  canalPreferido: r.canal_preferido,
   distanciaKm: Number(r.distancia_km),
   consultasTotais: r.consultas_totais,
   faltas: r.faltas,
@@ -90,6 +99,7 @@ const linhaParaConsulta = (r: any): Consulta => ({
   hora: typeof r.hora === 'string' ? r.hora.slice(0, 5) : r.hora,
   duracaoMin: r.duracao_min,
   tipo: r.tipo,
+  valorEuros: Number(r.valor_euros),
   estado: r.estado,
   dataMarcacao: r.data_marcacao,
   confirmada: r.confirmada,
@@ -146,21 +156,23 @@ export async function obterConsultasDoDia(
         if (!r.paciente || !r.medico || !r.gabinete) return null
         const consulta = linhaParaConsulta(r)
         const paciente = linhaParaPaciente(r.paciente)
+        const medico = {
+          id: r.medico.id,
+          clinicaId: r.medico.clinica_id,
+          nome: r.medico.nome,
+          especialidade: r.medico.especialidade,
+          taxaFaltaHistorica: Number(r.medico.taxa_falta_historica),
+        }
         return {
           ...consulta,
           paciente,
-          medico: {
-            id: r.medico.id,
-            clinicaId: r.medico.clinica_id,
-            nome: r.medico.nome,
-            especialidade: r.medico.especialidade,
-          },
+          medico,
           gabinete: {
             id: r.gabinete.id,
             clinicaId: r.gabinete.clinica_id,
             nome: r.gabinete.nome,
           },
-          risco: calcularRisco(consulta, paciente),
+          risco: calcularRisco(consulta, paciente, medico),
         }
       })
       .filter((c): c is ConsultaEnriquecida => c !== null)

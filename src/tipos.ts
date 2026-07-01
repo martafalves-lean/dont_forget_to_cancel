@@ -19,6 +19,19 @@ export type EstadoConsulta =
 
 export type CanalConfirmacao = 'SMS' | 'Email' | 'Telefone' | null
 
+export type Sexo = 'Feminino' | 'Masculino'
+
+/** Meio de comunicação preferencial do paciente. */
+export type CanalComunicacao = 'SMS' | 'Email' | 'App' | 'Telefone' | 'Nenhum'
+
+/** Seguro/plano de saúde. "Particular" = sem seguro (paga a totalidade). */
+export type Seguro =
+  | 'Particular'
+  | 'Médis'
+  | 'Multicare'
+  | 'AdvanceCare'
+  | 'SNS'
+
 export interface Clinica {
   id: string
   nome: string
@@ -37,12 +50,19 @@ export interface Medico {
   clinicaId: string
   nome: string
   especialidade: string
+  /** Taxa histórica de falta nas consultas deste médico/agenda (0-1). */
+  taxaFaltaHistorica: number
 }
 
 export interface Paciente {
   id: string
   nome: string
+  sexo: Sexo
   idade: number
+  /** Seguro/plano de saúde (ou "Particular"). */
+  seguro: Seguro
+  /** Meio de comunicação preferencial. */
+  canalPreferido: CanalComunicacao
   /** Distancia da residencia a clinica, em km. */
   distanciaKm: number
   /** Numero total de consultas historicas marcadas. */
@@ -68,6 +88,8 @@ export interface Consulta {
   hora: string
   duracaoMin: number
   tipo: TipoConsulta
+  /** Valor da consulta em euros. */
+  valorEuros: number
   estado: EstadoConsulta
   /** Data em que a marcacao foi efetuada (AAAA-MM-DD). */
   dataMarcacao: string

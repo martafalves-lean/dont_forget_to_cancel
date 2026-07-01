@@ -68,6 +68,7 @@ export function PainelPaciente({ consulta, aoFechar }: Props) {
           <h4>Marcação</h4>
           <dl className="painel-detalhes">
             <div><dt>Tipo</dt><dd>{consulta.tipo}</dd></div>
+            <div><dt>Valor</dt><dd>{consulta.valorEuros} €</dd></div>
             <div><dt>Hora</dt><dd>{consulta.hora} ({consulta.duracaoMin} min)</dd></div>
             <div><dt>Gabinete</dt><dd>{gabinete.nome}</dd></div>
             <div><dt>Médico</dt><dd>{medico.nome}</dd></div>
@@ -86,6 +87,9 @@ export function PainelPaciente({ consulta, aoFechar }: Props) {
         <section className="painel-seccao">
           <h4>Histórico do paciente</h4>
           <dl className="painel-detalhes">
+            <div><dt>Sexo</dt><dd>{paciente.sexo}</dd></div>
+            <div><dt>Seguro</dt><dd>{paciente.seguro}</dd></div>
+            <div><dt>Contacto preferido</dt><dd>{paciente.canalPreferido}</dd></div>
             <div><dt>Consultas</dt><dd>{paciente.consultasTotais}</dd></div>
             <div>
               <dt>Faltas</dt>

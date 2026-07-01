@@ -1,6 +1,7 @@
 import type {
   Consulta,
   FatorRisco,
+  Medico,
   NivelRisco,
   Paciente,
   ResultadoRisco,
@@ -10,15 +11,18 @@ import type {
 // ---------------------------------------------------------------------------
 // Modelo de risco de falta
 // ---------------------------------------------------------------------------
-// O risco é uma pontuação 0-100 composta por quatro grupos de variáveis, cada
-// um com um orçamento máximo de pontos. A soma das contribuições dá a
-// pontuação final. O modelo é propositadamente transparente: cada fator
-// devolve uma contribuição e uma explicação para ser mostrada na interface.
+// Modelo heurístico e transparente (a substituir, no futuro, por um modelo
+// preditivo treinado com dados reais). Cada fator devolve uma contribuição em
+// pontos e uma explicação, para ser mostrada na interface. A pontuação final é
+// a soma das contribuições, limitada a 0-100.
 //
-//   Histórico de faltas .............. até 35 pts
-//   Confirmação e antecedência ....... até 25 pts
-//   Contexto da consulta ............. até 20 pts
-//   Perfil do paciente ............... até 20 pts
+// Variáveis consideradas (alinhadas com o futuro modelo preditivo):
+//   histórico de faltas, antecedência e confirmação, tipo de tratamento,
+//   valor da consulta, hora, dia da semana, época do ano, idade, sexo,
+//   distância, inatividade, seguro, meio de comunicação preferencial e
+//   taxa de falta histórica do médico/agenda.
+//
+// NOTA: os pesos são ilustrativos e devem ser calibrados com dados reais.
 // ---------------------------------------------------------------------------
 
 const limitar = (valor: number, min = 0, max = 1) =>
@@ -46,6 +50,11 @@ const NOMES_DIAS = [
   'sábado',
 ]
 
+const NOMES_MESES = [
+  'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
+  'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro',
+]
+
 function diasEntre(dataInicio: string, dataFim: string): number {
   const a = new Date(dataInicio + 'T00:00:00')
   const b = new Date(dataFim + 'T00:00:00')
@@ -53,25 +62,27 @@ function diasEntre(dataInicio: string, dataFim: string): number {
 }
 
 /**
- * Calcula o risco de falta de uma marcação combinando histórico do paciente,
- * estado de confirmação, contexto da consulta e perfil do paciente.
+ * Calcula o risco de falta de uma marcação combinando o histórico do paciente,
+ * o estado de confirmação, o contexto da consulta, o perfil do paciente e a
+ * agenda do médico responsável.
  */
 export function calcularRisco(
   consulta: Consulta,
   paciente: Paciente,
+  medico?: Medico,
 ): ResultadoRisco {
   const fatores: FatorRisco[] = []
 
-  // --- Grupo 1: Histórico de faltas (até 35 pts) -------------------------
+  // --- Histórico de faltas -----------------------------------------------
   if (paciente.consultasTotais === 0) {
     fatores.push({
       etiqueta: 'Sem histórico',
-      contribuicao: 14,
+      contribuicao: 12,
       descricao: 'Paciente novo, sem histórico de comparência conhecido.',
     })
   } else {
     const taxaFaltas = paciente.faltas / paciente.consultasTotais
-    const ptFaltas = Math.round(25 * limitar(taxaFaltas / 0.4))
+    const ptFaltas = Math.round(22 * limitar(taxaFaltas / 0.4))
     if (ptFaltas > 0) {
       fatores.push({
         etiqueta: 'Histórico de faltas',
@@ -81,7 +92,7 @@ export function calcularRisco(
         )}%).`,
       })
     }
-    const ptCancel = Math.round(10 * limitar(paciente.cancelamentosTardios / 3))
+    const ptCancel = Math.round(8 * limitar(paciente.cancelamentosTardios / 3))
     if (ptCancel > 0) {
       fatores.push({
         etiqueta: 'Cancelamentos tardios',
@@ -91,16 +102,16 @@ export function calcularRisco(
     }
   }
 
-  // --- Grupo 2: Confirmação e antecedência (até 25 pts) ------------------
+  // --- Confirmação e antecedência ----------------------------------------
   if (!consulta.confirmada) {
     fatores.push({
       etiqueta: 'Por confirmar',
-      contribuicao: 15,
+      contribuicao: 12,
       descricao: 'A marcação ainda não foi confirmada pelo paciente.',
     })
   }
   const antecedencia = Math.max(0, diasEntre(consulta.dataMarcacao, consulta.data))
-  const ptAntecedencia = Math.round(10 * limitar(antecedencia / 45))
+  const ptAntecedencia = Math.round(8 * limitar(antecedencia / 45))
   if (ptAntecedencia > 0) {
     fatores.push({
       etiqueta: 'Marcação antecipada',
@@ -109,13 +120,21 @@ export function calcularRisco(
     })
   }
 
-  // --- Grupo 3: Contexto da consulta (até 20 pts) ------------------------
-  const ptTipo = Math.round(8 * PROPENSAO_TIPO[consulta.tipo])
+  // --- Contexto da consulta ----------------------------------------------
+  const ptTipo = Math.round(7 * PROPENSAO_TIPO[consulta.tipo])
   if (ptTipo > 0) {
     fatores.push({
-      etiqueta: `Tipo: ${consulta.tipo}`,
+      etiqueta: `Tratamento: ${consulta.tipo}`,
       contribuicao: ptTipo,
-      descricao: 'Tipo de consulta com propensão de falta acima da média.',
+      descricao: 'Tipo de tratamento com propensão de falta acima da média.',
+    })
+  }
+
+  if (consulta.valorEuros < 50) {
+    fatores.push({
+      etiqueta: 'Consulta de baixo valor',
+      contribuicao: 3,
+      descricao: `Valor da consulta (${consulta.valorEuros} €) — menor peso para o paciente.`,
     })
   }
 
@@ -123,31 +142,55 @@ export function calcularRisco(
   if (horaNum < 9 || horaNum >= 18) {
     fatores.push({
       etiqueta: horaNum < 9 ? 'Horário muito cedo' : 'Horário ao fim do dia',
-      contribuicao: 4,
+      contribuicao: 3,
       descricao: 'Horários de extremo do dia falham com mais frequência.',
     })
   }
 
-  const diaSemana = new Date(consulta.data + 'T00:00:00').getDay()
+  const dataConsulta = new Date(consulta.data + 'T00:00:00')
+  const diaSemana = dataConsulta.getDay()
   if (diaSemana === 1 || diaSemana === 5 || diaSemana === 6) {
     fatores.push({
       etiqueta: `Dia: ${NOMES_DIAS[diaSemana]}`,
-      contribuicao: 4,
+      contribuicao: 3,
       descricao: 'Início/fim de semana com taxa de falta mais elevada.',
+    })
+  }
+
+  const mes = dataConsulta.getMonth()
+  if (mes === 6 || mes === 7 || mes === 11) {
+    fatores.push({
+      etiqueta: 'Época de férias',
+      contribuicao: 4,
+      descricao: `${NOMES_MESES[mes]} — período de férias/festas com mais faltas.`,
     })
   }
 
   if (consulta.tipo === 'Primeira consulta') {
     fatores.push({
       etiqueta: 'Primeira consulta',
-      contribuicao: 4,
+      contribuicao: 3,
       descricao: 'Pacientes em primeira consulta faltam mais.',
     })
   }
 
-  // --- Grupo 4: Perfil do paciente (até 20 pts) --------------------------
+  // --- Agenda do médico responsável --------------------------------------
+  if (medico) {
+    const ptMedico = Math.round(5 * limitar(medico.taxaFaltaHistorica / 0.25))
+    if (ptMedico > 0) {
+      fatores.push({
+        etiqueta: 'Agenda do médico',
+        contribuicao: ptMedico,
+        descricao: `${medico.nome}: ${Math.round(
+          medico.taxaFaltaHistorica * 100,
+        )}% de faltas históricas na agenda.`,
+      })
+    }
+  }
+
+  // --- Perfil do paciente -------------------------------------------------
   if (paciente.idade < 30) {
-    const ptIdade = Math.round(7 * limitar((30 - paciente.idade) / 18))
+    const ptIdade = Math.round(6 * limitar((30 - paciente.idade) / 18))
     if (ptIdade > 0) {
       fatores.push({
         etiqueta: 'Faixa etária jovem',
@@ -157,7 +200,15 @@ export function calcularRisco(
     }
   }
 
-  const ptDistancia = Math.round(7 * limitar(paciente.distanciaKm / 25))
+  if (paciente.sexo === 'Masculino') {
+    fatores.push({
+      etiqueta: 'Sexo masculino',
+      contribuicao: 3,
+      descricao: 'Fator demográfico ilustrativo, a calibrar com dados reais.',
+    })
+  }
+
+  const ptDistancia = Math.round(6 * limitar(paciente.distanciaKm / 25))
   if (ptDistancia > 0) {
     fatores.push({
       etiqueta: 'Distância à clínica',
@@ -169,12 +220,12 @@ export function calcularRisco(
   if (paciente.mesesDesdeUltimaVisita === null) {
     fatores.push({
       etiqueta: 'Nunca compareceu',
-      contribuicao: 6,
+      contribuicao: 5,
       descricao: 'Sem visita realizada anterior.',
     })
   } else {
     const ptInatividade = Math.round(
-      6 * limitar(paciente.mesesDesdeUltimaVisita / 24),
+      5 * limitar(paciente.mesesDesdeUltimaVisita / 24),
     )
     if (ptInatividade > 0) {
       fatores.push({
@@ -183,6 +234,28 @@ export function calcularRisco(
         descricao: `Última visita há ${paciente.mesesDesdeUltimaVisita} meses.`,
       })
     }
+  }
+
+  if (paciente.seguro !== 'Particular') {
+    fatores.push({
+      etiqueta: 'Consulta comparticipada',
+      contribuicao: 2,
+      descricao: `Seguro/plano: ${paciente.seguro} — menor compromisso financeiro.`,
+    })
+  }
+
+  if (paciente.canalPreferido === 'Nenhum') {
+    fatores.push({
+      etiqueta: 'Sem canal de contacto',
+      contribuicao: 3,
+      descricao: 'Não recebe lembretes automáticos.',
+    })
+  } else if (paciente.canalPreferido === 'Telefone') {
+    fatores.push({
+      etiqueta: 'Contacto só por telefone',
+      contribuicao: 1,
+      descricao: 'Sem lembretes digitais automáticos.',
+    })
   }
 
   // --- Pontuação final ----------------------------------------------------

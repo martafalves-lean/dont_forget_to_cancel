@@ -29,18 +29,25 @@ Interface inteiramente em **português europeu**.
 
 ## Modelo de risco
 
-O risco é uma pontuação 0–100 composta por quatro grupos de variáveis, cada um
-com um orçamento de pontos. O modelo é transparente: cada fator devolve a sua
-contribuição e uma explicação (ver [`src/logica/risco.ts`](src/logica/risco.ts)).
+O risco é uma pontuação 0–100. O modelo atual é **heurístico e transparente**:
+cada fator devolve a sua contribuição em pontos e uma explicação
+(ver [`src/logica/risco.ts`](src/logica/risco.ts)). No futuro será substituído
+por um modelo preditivo treinado com dados reais; as variáveis já estão
+alinhadas com esse objetivo.
 
-| Grupo | Máx. | Variáveis |
-|---|---|---|
-| Histórico de faltas | 35 | taxa de faltas, cancelamentos tardios, paciente novo |
-| Confirmação e antecedência | 25 | marcação por confirmar, dias de antecedência |
-| Contexto da consulta | 20 | tipo de consulta, hora do dia, dia da semana, primeira consulta |
-| Perfil do paciente | 20 | idade, distância à clínica, tempo desde a última visita |
+| Grupo | Variáveis |
+|---|---|
+| Histórico | taxa de faltas, cancelamentos tardios, paciente novo |
+| Confirmação/antecedência | marcação por confirmar, dias de antecedência |
+| Contexto da consulta | tratamento (tipo), valor da consulta, hora, dia da semana, época do ano, primeira consulta |
+| Médico/responsável | taxa de falta histórica da agenda do médico |
+| Perfil do paciente | idade, sexo, distância, inatividade, seguro, meio de comunicação preferencial |
 
 Níveis: **baixo** (0–33), **médio** (34–66), **alto** (67–100).
+
+> Os pesos são ilustrativos. Variáveis sensíveis (ex.: sexo) estão incluídas por
+> constarem do conjunto previsto para o modelo, e devem ser calibradas — ou
+> ponderadas eticamente — com dados reais.
 
 ## Stack
 

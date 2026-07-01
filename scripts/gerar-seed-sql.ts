@@ -43,21 +43,21 @@ for (const g of GABINETES) {
 linhas.push('\n-- medicos')
 for (const m of MEDICOS) {
   linhas.push(
-    `insert into medicos (id, clinica_id, nome, especialidade) values (${aspas(m.id)}, ${aspas(m.clinicaId)}, ${aspas(m.nome)}, ${aspas(m.especialidade)});`,
+    `insert into medicos (id, clinica_id, nome, especialidade, taxa_falta_historica) values (${aspas(m.id)}, ${aspas(m.clinicaId)}, ${aspas(m.nome)}, ${aspas(m.especialidade)}, ${m.taxaFaltaHistorica});`,
   )
 }
 
 linhas.push('\n-- pacientes')
 for (const p of PACIENTES) {
   linhas.push(
-    `insert into pacientes (id, nome, idade, distancia_km, consultas_totais, faltas, cancelamentos_tardios, meses_desde_ultima_visita, telefone) values (${aspas(p.id)}, ${aspas(p.nome)}, ${p.idade}, ${p.distanciaKm}, ${p.consultasTotais}, ${p.faltas}, ${p.cancelamentosTardios}, ${nulo(p.mesesDesdeUltimaVisita)}, ${aspas(p.telefone)});`,
+    `insert into pacientes (id, nome, sexo, idade, seguro, canal_preferido, distancia_km, consultas_totais, faltas, cancelamentos_tardios, meses_desde_ultima_visita, telefone) values (${aspas(p.id)}, ${aspas(p.nome)}, ${aspas(p.sexo)}, ${p.idade}, ${aspas(p.seguro)}, ${aspas(p.canalPreferido)}, ${p.distanciaKm}, ${p.consultasTotais}, ${p.faltas}, ${p.cancelamentosTardios}, ${nulo(p.mesesDesdeUltimaVisita)}, ${aspas(p.telefone)});`,
   )
 }
 
 linhas.push('\n-- consultas')
 for (const c of gerarConsultas()) {
   linhas.push(
-    `insert into consultas (id, clinica_id, gabinete_id, medico_id, paciente_id, data, hora, duracao_min, tipo, estado, data_marcacao, confirmada, canal_confirmacao) values (${aspas(c.id)}, ${aspas(c.clinicaId)}, ${aspas(c.gabineteId)}, ${aspas(c.medicoId)}, ${aspas(c.pacienteId)}, ${aspas(c.data)}, ${aspas(c.hora)}, ${c.duracaoMin}, ${aspas(c.tipo)}, ${aspas(c.estado)}, ${aspas(c.dataMarcacao)}, ${bool(c.confirmada)}, ${c.canalConfirmacao ? aspas(c.canalConfirmacao) : 'null'});`,
+    `insert into consultas (id, clinica_id, gabinete_id, medico_id, paciente_id, data, hora, duracao_min, tipo, valor_euros, estado, data_marcacao, confirmada, canal_confirmacao) values (${aspas(c.id)}, ${aspas(c.clinicaId)}, ${aspas(c.gabineteId)}, ${aspas(c.medicoId)}, ${aspas(c.pacienteId)}, ${aspas(c.data)}, ${aspas(c.hora)}, ${c.duracaoMin}, ${aspas(c.tipo)}, ${c.valorEuros}, ${aspas(c.estado)}, ${aspas(c.dataMarcacao)}, ${bool(c.confirmada)}, ${c.canalConfirmacao ? aspas(c.canalConfirmacao) : 'null'});`,
   )
 }
 
