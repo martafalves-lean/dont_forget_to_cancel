@@ -10,3 +10,10 @@ dist-ssr
 supabase/seed.sql
 .gstack/
 .claude/
+
+# Modelo preditivo (Python)
+modelo/.venv/
+modelo/__pycache__/
+modelo/dados/*.csv
+modelo/saida/
+__pycache__/

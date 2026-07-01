@@ -111,7 +111,16 @@ scripts/
   gerar-seed-sql.ts        Gera supabase/seed.sql a partir do seed
 supabase/
   migrations/0001_schema.sql
+modelo/                    Pipeline Python para treinar o modelo preditivo (futuro)
 ```
+
+## Modelo preditivo (futuro)
+
+O risco mostrado na app é, para já, uma **heurística** ([src/logica/risco.ts](src/logica/risco.ts)).
+A pasta [`modelo/`](modelo/) contém o esqueleto de um pipeline em Python
+(pandas + scikit-learn) para, no futuro, **treinar um modelo preditivo** com o
+histórico real de faltas e substituir essa heurística. Ver
+[modelo/README.md](modelo/README.md).
 
 ## Aviso
 
