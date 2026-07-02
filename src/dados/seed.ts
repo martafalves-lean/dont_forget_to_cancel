@@ -3,10 +3,13 @@ import type {
   CanalConfirmacao,
   Clinica,
   Consulta,
+  EntradaListaEspera,
   EstadoConsulta,
   Gabinete,
   Medico,
   Paciente,
+  PeriodoPreferido,
+  Prioridade,
   Seguro,
   Sexo,
   TipoConsulta,
@@ -296,4 +299,39 @@ export function gerarConsultas(
     }
   }
   return consultas
+}
+
+// --- Lista de espera -------------------------------------------------------
+
+const PRIORIDADES: Prioridade[] = [
+  'Normal', 'Normal', 'Normal', 'Preferencial', 'Preferencial', 'Urgente',
+]
+const PERIODOS: PeriodoPreferido[] = ['Manhã', 'Tarde', 'Qualquer', 'Qualquer']
+
+/**
+ * Gera a lista de espera de cada clínica (pacientes a aguardar vaga), com a
+ * data de inscrição relativa a hoje.
+ */
+export function gerarListaEspera(hoje: Date = new Date()): EntradaListaEspera[] {
+  const r = mulberry32(5150)
+  const lista: EntradaListaEspera[] = []
+  let n = 0
+  for (const c of CLINICAS) {
+    // Entre 8 e 22 pacientes em espera por clínica.
+    const quantos = inteiro(r, 8, 22)
+    for (let i = 0; i < quantos; i++) {
+      const diasInscrito = inteiro(r, 1, 120)
+      n++
+      lista.push({
+        id: `esp-${String(n).padStart(5, '0')}`,
+        pacienteId: escolher(r, PACIENTES).id,
+        clinicaId: c.id,
+        tipoPretendido: escolher(r, TIPOS),
+        prioridade: escolher(r, PRIORIDADES),
+        periodoPreferido: escolher(r, PERIODOS),
+        dataInscricao: dataISO(adicionarDias(hoje, -diasInscrito)),
+      })
+    }
+  }
+  return lista
 }

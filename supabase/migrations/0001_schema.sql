@@ -54,24 +54,37 @@ create table if not exists consultas (
   canal_confirmacao  text
 );
 
+create table if not exists lista_espera (
+  id                 text primary key,
+  paciente_id        text not null references pacientes (id) on delete cascade,
+  clinica_id         text not null references clinicas (id) on delete cascade,
+  tipo_pretendido    text not null,
+  prioridade         text not null,
+  periodo_preferido  text not null,
+  data_inscricao     date not null
+);
+
 create index if not exists idx_consultas_clinica_data on consultas (clinica_id, data);
 create index if not exists idx_consultas_gabinete on consultas (gabinete_id);
+create index if not exists idx_lista_espera_clinica on lista_espera (clinica_id);
 
 -- RLS: leitura publica (anon) para a demonstracao. Ajuste conforme a politica
 -- de seguranca pretendida antes de usar em producao.
-alter table clinicas  enable row level security;
-alter table gabinetes enable row level security;
-alter table medicos   enable row level security;
-alter table pacientes enable row level security;
-alter table consultas enable row level security;
+alter table clinicas     enable row level security;
+alter table gabinetes    enable row level security;
+alter table medicos      enable row level security;
+alter table pacientes    enable row level security;
+alter table consultas    enable row level security;
+alter table lista_espera enable row level security;
 
 do $$
 begin
   if not exists (select 1 from pg_policies where tablename = 'clinicas' and policyname = 'leitura_publica') then
-    create policy leitura_publica on clinicas  for select using (true);
-    create policy leitura_publica on gabinetes for select using (true);
-    create policy leitura_publica on medicos   for select using (true);
-    create policy leitura_publica on pacientes for select using (true);
-    create policy leitura_publica on consultas for select using (true);
+    create policy leitura_publica on clinicas     for select using (true);
+    create policy leitura_publica on gabinetes    for select using (true);
+    create policy leitura_publica on medicos      for select using (true);
+    create policy leitura_publica on pacientes    for select using (true);
+    create policy leitura_publica on consultas    for select using (true);
+    create policy leitura_publica on lista_espera for select using (true);
   end if;
 end $$;

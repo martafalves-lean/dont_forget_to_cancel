@@ -1,15 +1,16 @@
-import type { ConsultaEnriquecida } from '../tipos'
+import type { ConsultaEnriquecida, SugestaoEspera } from '../tipos'
 import { ETIQUETA_NIVEL } from '../logica/risco'
 import { DistintivoRisco } from './DistintivoRisco'
 import { iniciais } from '../utils/formato'
 
 interface Props {
   consulta: ConsultaEnriquecida | null
+  sugestoes: SugestaoEspera[]
+  aCarregarSugestoes: boolean
   aoFechar: () => void
 }
 
 function acaoSugerida(c: ConsultaEnriquecida): string {
-  if (c.estado === 'Cancelada') return 'Marcação cancelada — libertar o horário.'
   if (c.estado === 'Faltou') return 'Paciente faltou — contactar para remarcar.'
   if (c.risco.nivel === 'alto')
     return c.confirmada
@@ -22,9 +23,15 @@ function acaoSugerida(c: ConsultaEnriquecida): string {
   return 'Sem ação necessária — risco controlado.'
 }
 
-export function PainelPaciente({ consulta, aoFechar }: Props) {
+export function PainelPaciente({
+  consulta,
+  sugestoes,
+  aCarregarSugestoes,
+  aoFechar,
+}: Props) {
   if (!consulta) return null
   const { paciente, medico, gabinete, risco } = consulta
+  const vaga = consulta.estado === 'Cancelada'
   const taxaHistorica =
     paciente.consultasTotais > 0
       ? Math.round((paciente.faltas / paciente.consultasTotais) * 100)
@@ -33,7 +40,7 @@ export function PainelPaciente({ consulta, aoFechar }: Props) {
   return (
     <>
       <div className="painel-fundo" onClick={aoFechar} />
-      <aside className="painel-paciente" role="dialog" aria-label="Detalhe do paciente">
+      <aside className="painel-paciente" role="dialog" aria-label="Detalhe da marcação">
         <header className="painel-cabecalho">
           <div className="avatar">{iniciais(paciente.nome)}</div>
           <div className="painel-titulo">
@@ -47,22 +54,32 @@ export function PainelPaciente({ consulta, aoFechar }: Props) {
           </button>
         </header>
 
-        <div className="painel-risco">
-          <DistintivoRisco
-            nivel={risco.nivel}
-            pontuacao={risco.pontuacao}
-            tamanho="grande"
+        {vaga ? (
+          <SeccaoVaga
+            consulta={consulta}
+            sugestoes={sugestoes}
+            aCarregar={aCarregarSugestoes}
           />
-          <p className="painel-risco-texto">
-            Probabilidade estimada de falta:{' '}
-            <strong>{risco.pontuacao}%</strong> ({ETIQUETA_NIVEL[risco.nivel]})
-          </p>
-        </div>
+        ) : (
+          <>
+            <div className="painel-risco">
+              <DistintivoRisco
+                nivel={risco.nivel}
+                pontuacao={risco.pontuacao}
+                tamanho="grande"
+              />
+              <p className="painel-risco-texto">
+                Probabilidade estimada de falta:{' '}
+                <strong>{risco.pontuacao}%</strong> ({ETIQUETA_NIVEL[risco.nivel]})
+              </p>
+            </div>
 
-        <div className="painel-accao">
-          <span className="painel-accao-icone" aria-hidden="true">⚑</span>
-          <p>{acaoSugerida(consulta)}</p>
-        </div>
+            <div className="painel-accao">
+              <span className="painel-accao-icone" aria-hidden="true">⚑</span>
+              <p>{acaoSugerida(consulta)}</p>
+            </div>
+          </>
+        )}
 
         <section className="painel-seccao">
           <h4>Marcação</h4>
@@ -73,14 +90,6 @@ export function PainelPaciente({ consulta, aoFechar }: Props) {
             <div><dt>Gabinete</dt><dd>{gabinete.nome}</dd></div>
             <div><dt>Médico</dt><dd>{medico.nome}</dd></div>
             <div><dt>Estado</dt><dd>{consulta.estado}</dd></div>
-            <div>
-              <dt>Confirmação</dt>
-              <dd>
-                {consulta.confirmada
-                  ? `Confirmada (${consulta.canalConfirmacao})`
-                  : 'Por confirmar'}
-              </dd>
-            </div>
           </dl>
         </section>
 
@@ -111,33 +120,110 @@ export function PainelPaciente({ consulta, aoFechar }: Props) {
           </dl>
         </section>
 
-        <section className="painel-seccao">
-          <h4>Porque é que o risco é este?</h4>
-          {risco.fatores.length === 0 ? (
-            <p className="sem-fatores">
-              Nenhum fator de risco relevante. Paciente fiável.
-            </p>
-          ) : (
-            <ul className="lista-fatores">
-              {risco.fatores.map((f, i) => (
-                <li key={i} className="fator">
-                  <div className="fator-topo">
-                    <span className="fator-etiqueta">{f.etiqueta}</span>
-                    <span className="fator-pontos">+{f.contribuicao}</span>
-                  </div>
-                  <div className="fator-barra">
-                    <span
-                      className="fator-barra-preenchimento"
-                      style={{ width: `${Math.min(100, f.contribuicao * 4)}%` }}
-                    />
-                  </div>
-                  <p className="fator-descricao">{f.descricao}</p>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+        {!vaga && (
+          <section className="painel-seccao">
+            <h4>Porque é que o risco é este?</h4>
+            {risco.fatores.length === 0 ? (
+              <p className="sem-fatores">
+                Nenhum fator de risco relevante. Paciente fiável.
+              </p>
+            ) : (
+              <ul className="lista-fatores">
+                {risco.fatores.map((f, i) => (
+                  <li key={i} className="fator">
+                    <div className="fator-topo">
+                      <span className="fator-etiqueta">{f.etiqueta}</span>
+                      <span className="fator-pontos">+{f.contribuicao}</span>
+                    </div>
+                    <div className="fator-barra">
+                      <span
+                        className="fator-barra-preenchimento"
+                        style={{ width: `${Math.min(100, f.contribuicao * 4)}%` }}
+                      />
+                    </div>
+                    <p className="fator-descricao">{f.descricao}</p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        )}
       </aside>
+    </>
+  )
+}
+
+function SeccaoVaga({
+  consulta,
+  sugestoes,
+  aCarregar,
+}: {
+  consulta: ConsultaEnriquecida
+  sugestoes: SugestaoEspera[]
+  aCarregar: boolean
+}) {
+  return (
+    <>
+      <div className="vaga-banner">
+        <span className="vaga-icone" aria-hidden="true">🗓️</span>
+        <div>
+          <strong>Vaga livre às {consulta.hora}</strong>
+          <p>
+            Consulta cancelada — {consulta.gabinete.nome}, {consulta.tipo}. Contacte
+            a lista de espera para não perder a vaga.
+          </p>
+        </div>
+      </div>
+
+      <section className="painel-seccao">
+        <h4>Lista de espera (mesma clínica)</h4>
+        {aCarregar ? (
+          <p className="sem-fatores">A procurar pacientes…</p>
+        ) : sugestoes.length === 0 ? (
+          <p className="sem-fatores">Sem pacientes em lista de espera nesta clínica.</p>
+        ) : (
+          <ul className="lista-sugestoes">
+            {sugestoes.map((s, i) => (
+              <li key={s.entrada.id} className="sugestao">
+                <div className="sugestao-ordem">{i + 1}</div>
+                <div className="sugestao-corpo">
+                  <div className="sugestao-topo">
+                    <span className="sugestao-nome">{s.paciente.nome}</span>
+                    {s.entrada.prioridade !== 'Normal' && (
+                      <span
+                        className={`selo-prioridade prioridade-${s.entrada.prioridade.toLowerCase()}`}
+                      >
+                        {s.entrada.prioridade}
+                      </span>
+                    )}
+                  </div>
+                  <div className="sugestao-motivos">
+                    {s.motivos.map((m, j) => (
+                      <span
+                        key={j}
+                        className={`motivo ${
+                          j === 0 && s.compativel ? 'motivo-forte' : ''
+                        }`}
+                      >
+                        {m}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="sugestao-contacto">
+                    <span>{s.paciente.telefone}</span>
+                    <a
+                      className="btn-contactar"
+                      href={`tel:${s.paciente.telefone}`}
+                    >
+                      Contactar
+                    </a>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </>
   )
 }

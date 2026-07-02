@@ -11,6 +11,7 @@ export function BarraResumo({ consultas }: Props) {
   const total = ativas.length
   const confirmadas = ativas.filter((c) => c.confirmada).length
   const altoRisco = ativas.filter((c) => c.risco.nivel === 'alto').length
+  const vagas = consultas.filter((c) => c.estado === 'Cancelada').length
   const faltasPrevistas = ativas.reduce(
     (s, c) => s + c.risco.pontuacao / 100,
     0,
@@ -30,11 +31,7 @@ export function BarraResumo({ consultas }: Props) {
       valor: `${taxaPrevista.toFixed(0)}%`,
       tom: 'aviso',
     },
-    {
-      etiqueta: 'Faltas previstas',
-      valor: faltasPrevistas.toFixed(1),
-      tom: 'aviso',
-    },
+    { etiqueta: 'Vagas livres', valor: String(vagas), tom: 'vaga' },
   ]
 
   return (

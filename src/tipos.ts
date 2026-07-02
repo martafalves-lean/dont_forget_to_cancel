@@ -119,3 +119,33 @@ export interface ConsultaEnriquecida extends Consulta {
   gabinete: Gabinete
   risco: ResultadoRisco
 }
+
+// --- Lista de espera / preenchimento de vagas ------------------------------
+
+export type Prioridade = 'Normal' | 'Preferencial' | 'Urgente'
+
+export type PeriodoPreferido = 'Manhã' | 'Tarde' | 'Qualquer'
+
+/** Paciente à espera de vaga numa clínica. */
+export interface EntradaListaEspera {
+  id: string
+  pacienteId: string
+  clinicaId: string
+  /** Tratamento que o paciente aguarda. */
+  tipoPretendido: TipoConsulta
+  prioridade: Prioridade
+  periodoPreferido: PeriodoPreferido
+  /** Data de inscrição na lista de espera (AAAA-MM-DD). */
+  dataInscricao: string
+}
+
+/** Sugestão de paciente da lista de espera para preencher uma vaga. */
+export interface SugestaoEspera {
+  entrada: EntradaListaEspera
+  paciente: Paciente
+  diasEmEspera: number
+  /** True se o tratamento pretendido corresponde ao da vaga. */
+  compativel: boolean
+  pontuacao: number
+  motivos: string[]
+}

@@ -2,17 +2,22 @@ import type {
   Clinica,
   Consulta,
   ConsultaEnriquecida,
+  EntradaListaEspera,
   Gabinete,
   Medico,
   Paciente,
+  SugestaoEspera,
 } from '../tipos'
 import { calcularRisco } from '../logica/risco'
+import { avaliarSugestao, ordenarSugestoes } from '../logica/espera'
+import { hojeISO } from '../utils/formato'
 import {
   CLINICAS,
   GABINETES,
   MEDICOS,
   PACIENTES,
   gerarConsultas,
+  gerarListaEspera,
 } from './seed'
 import { supabase, TEM_SUPABASE } from './supabase'
 
@@ -42,6 +47,12 @@ let consultasMemoria: Consulta[] | null = null
 function consultasDemo(): Consulta[] {
   if (!consultasMemoria) consultasMemoria = gerarConsultas()
   return consultasMemoria
+}
+
+let listaEsperaMemoria: EntradaListaEspera[] | null = null
+function listaEsperaDemo(): EntradaListaEspera[] {
+  if (!listaEsperaMemoria) listaEsperaMemoria = gerarListaEspera()
+  return listaEsperaMemoria
 }
 
 const mapaPacientes = new Map(PACIENTES.map((p) => [p.id, p]))
@@ -209,4 +220,47 @@ export async function obterResumoClinicas(
     }),
   )
   return resumos
+}
+
+/**
+ * Sugere pacientes da lista de espera da mesma clínica para preencher uma vaga
+ * (consulta cancelada). Devolve os `limite` melhores, ordenados por prioridade.
+ */
+export async function obterSugestoesListaEspera(
+  vaga: Consulta,
+  limite = 5,
+): Promise<SugestaoEspera[]> {
+  const hoje = hojeISO()
+
+  if (supabase) {
+    const { data, error } = await supabase
+      .from('lista_espera')
+      .select('*, paciente:pacientes(*)')
+      .eq('clinica_id', vaga.clinicaId)
+    if (error) throw error
+    const sugestoes = (data ?? [])
+      .filter((r: any) => r.paciente)
+      .map((r: any) => {
+        const entrada: EntradaListaEspera = {
+          id: r.id,
+          pacienteId: r.paciente_id,
+          clinicaId: r.clinica_id,
+          tipoPretendido: r.tipo_pretendido,
+          prioridade: r.prioridade,
+          periodoPreferido: r.periodo_preferido,
+          dataInscricao: r.data_inscricao,
+        }
+        return avaliarSugestao(entrada, linhaParaPaciente(r.paciente), vaga, hoje)
+      })
+    return ordenarSugestoes(sugestoes, limite)
+  }
+
+  const sugestoes = listaEsperaDemo()
+    .filter((e) => e.clinicaId === vaga.clinicaId)
+    .map((e) => {
+      const paciente = mapaPacientes.get(e.pacienteId)
+      return paciente ? avaliarSugestao(e, paciente, vaga, hoje) : null
+    })
+    .filter((s): s is SugestaoEspera => s !== null)
+  return ordenarSugestoes(sugestoes, limite)
 }

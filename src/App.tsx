@@ -1,11 +1,18 @@
 import { useEffect, useMemo, useState } from 'react'
-import type { Clinica, ConsultaEnriquecida, Gabinete, NivelRisco } from './tipos'
+import type {
+  Clinica,
+  ConsultaEnriquecida,
+  Gabinete,
+  NivelRisco,
+  SugestaoEspera,
+} from './tipos'
 import {
   FONTE_DADOS,
   obterClinicas,
   obterConsultasDoDia,
   obterGabinetes,
   obterResumoClinicas,
+  obterSugestoesListaEspera,
   type ResumoClinica,
 } from './dados/repositorio'
 import { hojeISO } from './utils/formato'
@@ -30,11 +37,16 @@ export function App() {
   const [carregando, setCarregando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
 
+  // Sugestoes da lista de espera para preencher uma vaga (consulta cancelada).
+  const [sugestoes, setSugestoes] = useState<SugestaoEspera[]>([])
+  const [aCarregarSugestoes, setACarregarSugestoes] = useState(false)
+
   // Filtros da vista de agenda
   const [filtroGabinete, setFiltroGabinete] = useState<string>('todos')
   const [filtroRisco, setFiltroRisco] = useState<FiltroRisco>('todos')
   const [pesquisa, setPesquisa] = useState('')
   const [soPorConfirmar, setSoPorConfirmar] = useState(false)
+  const [soVagas, setSoVagas] = useState(false)
 
   useEffect(() => {
     obterClinicas().then(setClinicas).catch(() => {})
@@ -77,28 +89,51 @@ export function App() {
     }
   }, [clinicaId, data])
 
+  const consultaSelecionada =
+    consultas.find((c) => c.id === consultaSelId) ?? null
+
+  // Ao selecionar uma vaga (consulta cancelada), procura sugestoes de espera.
+  useEffect(() => {
+    if (!consultaSelecionada || consultaSelecionada.estado !== 'Cancelada') {
+      setSugestoes([])
+      return
+    }
+    let ativo = true
+    setACarregarSugestoes(true)
+    obterSugestoesListaEspera(consultaSelecionada)
+      .then((s) => ativo && setSugestoes(s))
+      .catch(() => ativo && setSugestoes([]))
+      .finally(() => ativo && setACarregarSugestoes(false))
+    return () => {
+      ativo = false
+    }
+  }, [consultaSelecionada])
+
   const clinicaAtual = clinicas.find((c) => c.id === clinicaId) ?? null
+
+  const numVagas = useMemo(
+    () => consultas.filter((c) => c.estado === 'Cancelada').length,
+    [consultas],
+  )
 
   const consultasFiltradas = useMemo(() => {
     const termo = pesquisa.trim().toLowerCase()
     return consultas.filter((c) => {
       if (filtroGabinete !== 'todos' && c.gabineteId !== filtroGabinete)
         return false
+      if (soVagas && c.estado !== 'Cancelada') return false
       if (filtroRisco !== 'todos' && c.risco.nivel !== filtroRisco) return false
       if (soPorConfirmar && (c.confirmada || c.estado === 'Cancelada'))
         return false
       if (termo && !c.paciente.nome.toLowerCase().includes(termo)) return false
       return true
     })
-  }, [consultas, filtroGabinete, filtroRisco, soPorConfirmar, pesquisa])
+  }, [consultas, filtroGabinete, filtroRisco, soPorConfirmar, soVagas, pesquisa])
 
   const gabinetesVisiveis =
     filtroGabinete === 'todos'
       ? gabinetes
       : gabinetes.filter((g) => g.id === filtroGabinete)
-
-  const consultaSelecionada =
-    consultas.find((c) => c.id === consultaSelId) ?? null
 
   function voltarSelecao() {
     setClinicaId(null)
@@ -107,6 +142,7 @@ export function App() {
     setFiltroRisco('todos')
     setPesquisa('')
     setSoPorConfirmar(false)
+    setSoVagas(false)
   }
 
   return (
@@ -219,6 +255,13 @@ export function App() {
                 />
                 Só por confirmar
               </label>
+
+              <button
+                className={`chip-vagas ${soVagas ? 'ativo' : ''}`}
+                onClick={() => setSoVagas((v) => !v)}
+              >
+                Vagas livres{numVagas > 0 ? ` (${numVagas})` : ''}
+              </button>
             </div>
 
             {carregando ? (
@@ -241,6 +284,8 @@ export function App() {
 
       <PainelPaciente
         consulta={consultaSelecionada}
+        sugestoes={sugestoes}
+        aCarregarSugestoes={aCarregarSugestoes}
         aoFechar={() => setConsultaSelId(null)}
       />
     </div>

@@ -13,6 +13,7 @@ import {
   MEDICOS,
   PACIENTES,
   gerarConsultas,
+  gerarListaEspera,
 } from '../src/dados/seed'
 
 const aspas = (v: string) => `'${v.replace(/'/g, "''")}'`
@@ -23,7 +24,7 @@ const linhas: string[] = []
 linhas.push('-- Dados de demonstracao gerados automaticamente. Nao editar a mao.')
 linhas.push('begin;')
 linhas.push(
-  'truncate consultas, pacientes, medicos, gabinetes, clinicas restart identity cascade;',
+  'truncate lista_espera, consultas, pacientes, medicos, gabinetes, clinicas restart identity cascade;',
 )
 
 linhas.push('\n-- clinicas')
@@ -58,6 +59,13 @@ linhas.push('\n-- consultas')
 for (const c of gerarConsultas()) {
   linhas.push(
     `insert into consultas (id, clinica_id, gabinete_id, medico_id, paciente_id, data, hora, duracao_min, tipo, valor_euros, estado, data_marcacao, confirmada, canal_confirmacao) values (${aspas(c.id)}, ${aspas(c.clinicaId)}, ${aspas(c.gabineteId)}, ${aspas(c.medicoId)}, ${aspas(c.pacienteId)}, ${aspas(c.data)}, ${aspas(c.hora)}, ${c.duracaoMin}, ${aspas(c.tipo)}, ${c.valorEuros}, ${aspas(c.estado)}, ${aspas(c.dataMarcacao)}, ${bool(c.confirmada)}, ${c.canalConfirmacao ? aspas(c.canalConfirmacao) : 'null'});`,
+  )
+}
+
+linhas.push('\n-- lista de espera')
+for (const e of gerarListaEspera()) {
+  linhas.push(
+    `insert into lista_espera (id, paciente_id, clinica_id, tipo_pretendido, prioridade, periodo_preferido, data_inscricao) values (${aspas(e.id)}, ${aspas(e.pacienteId)}, ${aspas(e.clinicaId)}, ${aspas(e.tipoPretendido)}, ${aspas(e.prioridade)}, ${aspas(e.periodoPreferido)}, ${aspas(e.dataInscricao)});`,
   )
 }
 
